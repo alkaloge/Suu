@@ -3,11 +3,12 @@ Simple scripts to create Suu skims
 ## Introduction
 ** Step 1: Prepare a csv with the nAOD samples to be skimmed. Make sure that there are no empty lines, and that the following format is 
 
+full samples are kept at ```https://github.com/alkaloge/Suu/blob/master/Skimmer/MCsamples_2018UL.csv```
+
 ```TTTo2L2Nu, Top, 87.3, 1, 1,,/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM```
 
 
-the first column is used for the creation of the folder on /eos area
-
+the first column is used for the creation of the folder on /eos area. The rest can include information for the category, the xsec, SF etc, currently the skimmer is using the 1rst and the 6th column (which must be pointing to the nAOD datasets on DAS)
 ** Step 2:execute 
 
 > python makeMC.py -f file.csv -y 2018 -s Suu
