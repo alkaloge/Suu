@@ -1,13 +1,14 @@
 Simple scripts to create Suu skims
 
 ## Introduction
-Step 1: Prepare a csv with the nAOD samples to be skimmed. Make sure that there are no empty lines, and that the following format is 
+** Step 1: Prepare a csv with the nAOD samples to be skimmed. Make sure that there are no empty lines, and that the following format is 
 
-TTTo2L2Nu, Top, 87.3, 1, 1,,/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM
+```TTTo2L2Nu, Top, 87.3, 1, 1,,/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v1/NANOAODSIM```
+
 
 the first column is used for the creation of the folder on /eos area
 
-Step 2:execute 
+** Step 2:execute 
 
 > python makeMC.py -f file.csv -y 2018 -s Suu
 
@@ -23,8 +24,8 @@ final .root file is written on eos and can be changed here
 
 ```https://github.com/alkaloge/Suu/blob/master/Skimmer/makeCondor.py#L144```
 
-Step 3: create jobs > . runMC_2018_Suu.csh
+** Step 3: create jobs > . runMC_2018_Suu.csh
 
-Step 4: > cp subAllDirCondor.py Suu; cd Suu;
+** Step 4: > cp subAllDirCondor.py Suu; cd Suu;
 
 open the subAllDirCondor.py and control what should be sent. The script will make also a .submitted file for each job submitted on condor to avoid re-sending the job again. Should you need to resent the job, don't forget to delete the corresponding .submitted file
