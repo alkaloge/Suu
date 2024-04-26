@@ -225,7 +225,8 @@ for i_event in range(start_index, end_index):
     #LHEScaleWeight_ak = ak.Array([list(LHEScaleWeight) for _ in range(len(LHEScaleWeight))])
     #LHEScaleWeight_ak = ak.from_iter(LHEScaleWeight)
     if isMC:
-        LHEScaleWeight_ak = np.array(input_tree.LHEScaleWeight)
+        try : LHEScaleWeight_ak = np.array(input_tree.LHEScaleWeight)
+        except AttributeError : LHEScaleWeight_ak = np.ones(1)
     
     
     # Get Q2 weights
@@ -252,10 +253,17 @@ for i_event in range(start_index, end_index):
     #print("Q2 up weights:", q2_up)
     #print("Q2 down weights:", q2_down)
     if isMC :
-	LHEPdfWeight = np.array(input_tree.LHEPdfWeight)
-	pdf_N[0] = np.mean(GetPDFweights(LHEPdfWeight))
-	pdf_U[0] = np.mean(GetPDFweights(LHEPdfWeight, var="up"))
-	pdf_D[0] = np.mean(GetPDFweights(LHEPdfWeight, var="down"))
+       
+	try : 
+	    LHEPdfWeight = np.array(input_tree.LHEPdfWeight)
+	    pdf_N[0] = np.mean(GetPDFweights(LHEPdfWeight))
+	    pdf_U[0] = np.mean(GetPDFweights(LHEPdfWeight, var="up"))
+	    pdf_D[0] = np.mean(GetPDFweights(LHEPdfWeight, var="down"))
+        except AttributeError:
+	    LHEPdfWeight = np.ones(1)
+	    pdf_N[0] = 1.
+	    pdf_U[0] = 1.
+	    pdf_D[0] = 1.
     # Fill histogram bins with pdf_N after each cut
     #hist_pdf_N.Fill(counter, pdf_N[0])  # 
     #hist_pdf_U.Fill(counter, pdf_U[0])  # 
