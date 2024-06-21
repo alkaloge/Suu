@@ -25,9 +25,9 @@ def getArgs() :
 def beginBatchScript(baseFileName, Systematics) :
     outLines = ['#!/bin/sh\n']
     outLines.append("source /cvmfs/cms.cern.ch/cmsset_default.sh\n")
-    outLines.append("setenv SCRAM_ARCH slc7_amd64_gcc820\n")
-    outLines.append("eval `scramv1 project CMSSW CMSSW_10_6_5`\n")
-    outLines.append("cd CMSSW_10_6_5/src\n")
+    outLines.append("setenv SCRAM_ARCH el8_amd64_gcc10\n")
+    outLines.append("eval `scramv1 project CMSSW CMSSW_12_5_5`\n")
+    outLines.append("cd CMSSW_12_5_5/src\n")
     outLines.append("eval `scramv1 runtime -sh`\n")
     #outLines.append("tar -zxvf ${_CONDOR_SCRATCH_DIR}/taupog.tar.gz\n")
     outLines.append("scram b -j 4\n")
@@ -39,7 +39,7 @@ def beginBatchScript(baseFileName, Systematics) :
     #    outLines.append("cd PhysicsTools/NanoAODTools\n")
     #    outLines.append("scram b -j 4\n")
     outLines.append("echo ${_CONDOR_SCRATCH_DIR}\n")
-    outLines.append("cd ${_CONDOR_SCRATCH_DIR}/CMSSW_10_6_5/src/\n")
+    outLines.append("cd ${_CONDOR_SCRATCH_DIR}/CMSSW_12_5_5/src/\n")
     outLines.append("cp ${_CONDOR_SCRATCH_DIR}/* .\n")
     outLines.append("ls -altrh\n")
     outLines.append("echo 'this is the working dir' ${_CONDOR_SCRATCH_DIR}\n")
@@ -62,6 +62,8 @@ doJME  = args.doSystematics.lower() == 'true' or args.doSystematics.lower() == '
 
 doWeightsOnly = args.weightsOnly.lower() =='yes' or args.weightsOnly.lower()=='1' or  args.weightsOnly.lower() == 'true'
 
+print 'args.dataSet', args.dataSet, args.year
+
 period="B"
 if 'Run2016' in args.dataSet or 'Run2017' in args.dataSet or 'Run2018' in args.dataSet: 
     poss = args.dataSet.find("Run")
@@ -69,7 +71,7 @@ if 'Run2016' in args.dataSet or 'Run2017' in args.dataSet or 'Run2018' in args.d
     print 'will set up', poss, period
 
 #if 'HIPM' in args.dataSet: period='_preVFP'+period
-if 'HIPM' in args.dataSet or '_pre' in args.dataSet: era=era+'_preVFP'
+if 'HIPM' in args.dataSet or '_preVF' in args.dataSet or 'APV' in args.dataSet: era=era+'_preVFP'
 
 
 # sample query 
@@ -117,7 +119,7 @@ executable='SystWeights'
 mparts=mjobs
 
 #if not doJME : mparts=1
-wdir='/uscms_data/d3/alkaloge/MetStudies/nAOD/CMSSW_10_6_5/src/MakeSyst/test/'
+wdir='/uscms_data/d3/alkaloge/MetStudies/nAOD/CMSSW_12_5_5/src/MakeSyst/test/'
 ff = open("{0:s}/template_".format(wdir), "r")
 textf = ff.read()
 infile = "inFile.root"
@@ -129,6 +131,7 @@ if True:
 	#print("nFile={0:d} file[:80]={1:s}".format(nFile,file[:80]))
 	fileName = getFileName(file)
 	fileloop=dataset[nFile]
+        #print 'working', fileloop, args.nickName
 	outFileName = "{0:s}_{1:03d}.root".format(args.nickName,nFile+1)
         scriptName = "skim_{0:s}_file{1:s}.sh".format(args.nickName, str(nFile+1))
         runLines=[]
@@ -137,11 +140,11 @@ if True:
 	runLines.append("xrdcp root://cmsxrootd.fnal.gov/{0:s} inFile.root\n".format(fileloop)) 
 	runLines.append("if [ ! -f inFile.root ] ; \n then \n xrdcp root://cms-xrd-global.cern.ch/{0:s} inFile.root\n fi \n".format(fileloop)) 
 	extra=''
-	if 'Run' in fileloop : runLines.append("python skim_template.py  0\n")
-	else: runLines.append("python skim_template.py  1\n")
+	if 'Run201' in fileloop : runLines.append("python3 skim_template.py  0\n")
+	else: runLines.append("python3 skim_template.py  1\n")
 	runLines.append("rm inFile.root \n")
 
-	runLines.append("xrdcp selected_events.root  root://cmseos.fnal.gov//store/group/lpcsusyhiggs/ntuples/Suu//{0:s}_{3:s}/skim_{0:s}_file{1:s}.root\n".format(args.nickName, str(nFile+1), outFileName, args.year)) 
+	runLines.append("xrdcp selected_events.root  root://cmseos.fnal.gov//store/group/lpcsusyhiggs/ntuples/Suuv2//{0:s}_{3:s}/skim_{0:s}_file{1:s}.root\n".format(args.nickName, str(nFile+1), outFileName, args.year)) 
 	runLines.append("rm selected_events.root \n")
 	runLines.append(" \n")
 
@@ -162,7 +165,7 @@ if True:
 
 #dir = '/uscms_data/d3/alkaloge/ZH/CMSSW_10_2_9/src/MC/'
 
-wdir='/uscms_data/d3/alkaloge/MetStudies/nAOD/CMSSW_10_6_5/src/MakeSyst/test/'
+wdir='/uscms_data/d3/alkaloge/MetStudies/nAOD/CMSSW_12_5_5/src/MakeSyst/test/'
 
 dirMC = wdir+"/MC/"
 dirZH = wdir+"/ZH/"
@@ -191,6 +194,7 @@ for file in scriptList :
     runLines.append('priority = 2\n')
     runLines.append('should_transfer_files = YES\n')
     runLines.append('when_to_transfer_output = ON_EXIT\n')
+    runLines.append('+DesiredOS="rhel8"\n')
     runLines.append('x509userproxy = $ENV(X509_USER_PROXY)\n')
     runLines.append('Queue 1\n')
     open('{0:s}.jdl'.format(base),'w').writelines(runLines)

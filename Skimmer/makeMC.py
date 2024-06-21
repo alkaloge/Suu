@@ -8,7 +8,7 @@ def getArgs() :
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-f","--inFile",default='MCsamples_2016.csv',help="Input file name.") 
-    parser.add_argument("-y","--year",default=2017,type=int,help="Data taking period, 2016, 2017 or 2018")
+    parser.add_argument("-y","--year",default=2017,type=str,help="Data taking period, 2016, 2017 or 2018")
     parser.add_argument("-s","--selection",default='Suu',type=str,help="Select Suu or other analysis")
     parser.add_argument("-j","--doSystematics",default='yes',type=str,help="do JME systematics")
     parser.add_argument("-l","--islocal",default='no',type=str,help="local /eos files or DBS")
@@ -45,7 +45,7 @@ for line in open(args.inFile,'r').readlines() :
     outLines.append("mkdir -p {0:s}/{1:s}_{2:s}\ncd {0:s}/{1:s}_{2:s}\n".format(args.selection,nickname,era))
 
     #outLines.append("python ../../makeCondor.py --mode {2:s} --year {3:s} -c {5:s} -s {4:s} -j {6:s} -l {7:s} -d {8:b} --nickName {1:s} --dataSet {0:s}\n".format(dataset,nickname, mode,era, args.selection, str(conc), args.doSystematics, str(args.islocal), isdata ))
-    outLines.append("python ../../makeCondor.py --mode {2:s} --year {3:s} -c {5:s} -s {4:s} -l {7:s} -d {8:b} --nickName {1:s} --dataSet {0:s}\n".format(dataset,nickname, mode,era, args.selection, str(conc), args.doSystematics, str(args.islocal), isdata ))
+    outLines.append("python2 ../../makeCondor.py --mode {2:s} --year {3:s} -c {5:s} -s {4:s} -l {7:s} -d {8:b} --nickName {1:s} --dataSet {0:s}\n".format(dataset,nickname, mode,era, args.selection, str(conc), args.doSystematics, str(args.islocal), isdata ))
     outLines.append("cd {0:s}\n".format(cwd))
 
 fOut='runMC_{0:s}_{1:s}.csh'.format(str(args.year),args.selection)

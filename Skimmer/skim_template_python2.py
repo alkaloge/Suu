@@ -101,7 +101,6 @@ keys = ['CorrT1METJet*',
         'genWeight*',
         'PSWeight*',
         'LHE*',
-        'TrigO*'
 ]
 
 
@@ -166,7 +165,7 @@ cut_bins = {
     4: "SubLeadingJetCut"
 }
 
-for bin_number, bin_label in list(cut_bins.items()):
+for bin_number, bin_label in cut_bins.items():
     hist_pdf_N.GetXaxis().SetBinLabel(bin_number, bin_label)
     hist_pdf_U.GetXaxis().SetBinLabel(bin_number, bin_label)
     hist_pdf_D.GetXaxis().SetBinLabel(bin_number, bin_label)
@@ -203,7 +202,7 @@ else:
 start_index=0
 end_index =  num_events
 
-print(('will skim from ', start_index, 'to event', end_index))
+print 'will skim from ', start_index, 'to event', end_index
 # Iterate over the selected range of events
 for i_event in range(start_index, end_index):
 
@@ -216,7 +215,7 @@ for i_event in range(start_index, end_index):
     Ne=0
     counter=1
     
-    if i_event%5000==0 : print(("processing event", i_event))
+    if i_event%5000==0 : print "processing event", i_event
     input_tree.GetEntry(i_event)
 
     Nev_All +=1
@@ -240,9 +239,9 @@ for i_event in range(start_index, end_index):
     #q2_up=
     #q2_down=1
     if isMC:
-        q2_nominal = GetQ2Weights(LHEScaleWeight_ak)
-        q2_up = GetQ2Weights(LHEScaleWeight_ak, var="up")
-        q2_down = GetQ2Weights(LHEScaleWeight_ak, var="down")
+	q2_nominal = GetQ2Weights(LHEScaleWeight_ak)
+	q2_up = GetQ2Weights(LHEScaleWeight_ak, var="up")
+	q2_down = GetQ2Weights(LHEScaleWeight_ak, var="down")
 
     #hist_q2_N.Fill(counter, q2_nominal[0])
     #hist_q2_U.Fill(counter, q2_up[0])
@@ -254,17 +253,17 @@ for i_event in range(start_index, end_index):
     #print("Q2 up weights:", q2_up)
     #print("Q2 down weights:", q2_down)
     if isMC :
-           
-        try : 
-            LHEPdfWeight = np.array(input_tree.LHEPdfWeight)
-            pdf_N[0] = np.mean(GetPDFweights(LHEPdfWeight))
-            pdf_U[0] = np.mean(GetPDFweights(LHEPdfWeight, var="up"))
-            pdf_D[0] = np.mean(GetPDFweights(LHEPdfWeight, var="down"))
+       
+	try : 
+	    LHEPdfWeight = np.array(input_tree.LHEPdfWeight)
+	    pdf_N[0] = np.mean(GetPDFweights(LHEPdfWeight))
+	    pdf_U[0] = np.mean(GetPDFweights(LHEPdfWeight, var="up"))
+	    pdf_D[0] = np.mean(GetPDFweights(LHEPdfWeight, var="down"))
         except AttributeError:
-            LHEPdfWeight = np.ones(1)
-            pdf_N[0] = 1.
-            pdf_U[0] = 1.
-            pdf_D[0] = 1.
+	    LHEPdfWeight = np.ones(1)
+	    pdf_N[0] = 1.
+	    pdf_U[0] = 1.
+	    pdf_D[0] = 1.
     # Fill histogram bins with pdf_N after each cut
     #hist_pdf_N.Fill(counter, pdf_N[0])  # 
     #hist_pdf_U.Fill(counter, pdf_U[0])  # 
@@ -286,7 +285,7 @@ for i_event in range(start_index, end_index):
 
             hist_mu_pt.Fill(input_tree.Muon_pt[j])
             #print i_event, range(input_tree.nMuon), abs(input_tree.Muon_eta[j]) < 2.4, input_tree.Muon_eta[j]
-        #print 'muons...', input_tree.Muon_pt[j], input_tree.Muon_eta[j]
+	    #print 'muons...', input_tree.Muon_pt[j], input_tree.Muon_eta[j]
         if  input_tree.Muon_pt[j] > 50.:
             Nm+=1
     
@@ -313,16 +312,16 @@ for i_event in range(start_index, end_index):
     counter+=1
 
     nJet25 = 0
-    nJet150 = 0
+    nJet100 = 0
     for j in range(input_tree.nJet):
         hist_jet_pt.Fill(input_tree.Jet_pt[j])
-        if input_tree.Jet_pt[j] > 25:
-            nJet25 += 1
-            if input_tree.Jet_pt[j] > 150:
-                nJet150 += 1
+	if input_tree.Jet_pt[j] > 25:
+	    nJet25 += 1
+	    if input_tree.Jet_pt[j] > 100:
+		nJet100 += 1
 
 
-    if nJet150 < 1 : continue
+    if nJet100 < 1 : continue
     Nev_LeadingJetCut += 1
 
     hist_q2_N.Fill(counter, q2_nominal[0])
