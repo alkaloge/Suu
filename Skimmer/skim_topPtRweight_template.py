@@ -64,12 +64,12 @@ def GetTopPtWeight(t_pt, tbar_pt, var="nominal"):
     # Top pt reweighting according to the recommendation:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#Case_3_1_Analyses_with_SM_tt_as
     #if var == "nominal":
-    if var == "up":
+    if var == "nominal":
         return np.sqrt(np.exp(0.0615 - 0.0005 * t_pt) * np.exp(0.0615 - 0.0005 * tbar_pt))
-    elif var == "weight":
-        return np.exp(0.0615 - 0.0005 * t_pt) * np.exp(0.0615 - 0.0005 * tbar_pt)
+    elif var == "up":
+        return 1.
     else:
-        return 1.0
+        return np.exp(0.0615 - 0.0005 * t_pt) * np.exp(0.0615 - 0.0005 * tbar_pt)
 
 
 
@@ -134,10 +134,20 @@ pdf_N = np.zeros(1, dtype=float)
 pdf_U = np.zeros(1, dtype=float)
 pdf_D = np.zeros(1, dtype=float)
 
+q2_N = np.zeros(1, dtype=float)
+q2_U = np.zeros(1, dtype=float)
+q2_D = np.zeros(1, dtype=float)
+
 # Create branches in the output tree
 output_tree.Branch("pdf_N", pdf_N, "pdf_N/D")
 output_tree.Branch("pdf_U", pdf_U, "pdf_U/D")
 output_tree.Branch("pdf_D", pdf_D, "pdf_D/D")
+
+output_tree.Branch("q2_N", q2_N, "q2_N/D")
+output_tree.Branch("q2_U", q2_U, "q2_U/D")
+output_tree.Branch("q2_D", q2_D, "q2_D/D")
+
+
 
 
 
@@ -210,6 +220,16 @@ output_tree.Branch("topPtWeight_N", topPtWeight_N, "topPtWeight_N/D")
 output_tree.Branch("topPtWeight_U", topPtWeight_U, "topPtWeight_U/D")
 output_tree.Branch("topPtWeight_W", topPtWeight_W, "topPtWeight_W/D")
 
+
+topPtWeight_NoNorm_N = np.zeros(1, dtype=float)
+topPtWeight_NoNorm_U = np.zeros(1, dtype=float)
+topPtWeight_NoNorm_W = np.zeros(1, dtype=float)
+
+output_tree.Branch("topPtWeight_NoNorm_N", topPtWeight_NoNorm_N, "topPtWeight_NoNorm_N/D")
+output_tree.Branch("topPtWeight_NoNorm_U", topPtWeight_NoNorm_U, "topPtWeight_NoNorm_U/D")
+output_tree.Branch("topPtWeight_NoNorm_W", topPtWeight__NoNorm_W, "topPtWeight_NoNorm_W/D")
+
+
 # Create histograms for top pt weights
 hist_topPt_N = r.TH1F("hist_topPt_N", "TopPt_N after Cuts", num_cuts, 1, num_cuts+1)
 hist_topPt_U = r.TH1F("hist_topPt_U", "TopPt_U after Cuts", num_cuts, 1, num_cuts+1)
@@ -252,6 +272,48 @@ end_index =  num_events
 end_index=2000
 print(('will skim from ', start_index, 'to event', end_index))
 # Iterate over the selected range of events
+
+
+Nev_topPtWeight_N = 0
+Nev_topPtWeight_U = 0
+Nev_topPtWeight_D = 0
+
+#first run to store the SumOfWeights() for topPt
+for i_event in range(start_index, end_index):
+    foundTop = False 
+    foundAntitop = False
+    topPtWeight_N = 1.
+    topPtWeight_U = 1.
+    topPtWeight_D = 1.  
+
+    # In the event loop:
+    for i_gen in range(min(input_tree.nGenPart, len(genPart_pdgId))):
+        print (i_gen, genPart_pdgId[i_gen], genPart_status[i_gen], genPart_pt[i_gen])
+        if genPart_pdgId[i_gen] == 6 and genPart_status[i_gen] == 62:
+            top_pt = genPart_pt[i_gen]
+            foundTop = True
+        if genPart_pdgId[i_gen] == -6 and genPart_status[i_gen] == 62:
+            antitop_pt = genPart_pt[i_gen]
+            foundAntitop = True
+
+
+    if foundTop and foundAntitop:
+        topPtWeight_N = GetTopPtWeight(top_pt, antitop_pt, "nominal")
+        topPtWeight_U = GetTopPtWeight(top_pt, antitop_pt, "up")
+        topPtWeight_D = GetTopPtWeight(top_pt, antitop_pt, "weight")
+    else:
+        topPtWeight_N = 1.0
+        topPtWeight_U = 1.0
+        topPtWeight_D = 1.0
+
+    Nev_topPtWeight_N += topPtWeight_N
+    Nev_topPtWeight_U += topPtWeight_U
+    Nev_topPtWeight_D += topPtWeight_D
+
+
+
+
+
 for i_event in range(start_index, end_index):
 
 
@@ -278,18 +340,8 @@ for i_event in range(start_index, end_index):
     
     
     # Get Q2 weights
-    q2_nominal=[]
-    q2_up=[]
-    q2_down=[]
-    q2_nominal.append(1)
-    q2_up.append(1)
-    q2_down.append(1)
-    #q2_up=
-    #q2_down=1
-    if isMC:
-        q2_nominal = GetQ2Weights(LHEScaleWeight_ak)
-        q2_up = GetQ2Weights(LHEScaleWeight_ak, var="up")
-        q2_down = GetQ2Weights(LHEScaleWeight_ak, var="down")
+
+
 
     #hist_q2_N.Fill(counter, q2_nominal[0])
     #hist_q2_U.Fill(counter, q2_up[0])
@@ -300,6 +352,20 @@ for i_event in range(start_index, end_index):
     #print("Nominal Q2 weights:", q2_nominal)
     #print("Q2 up weights:", q2_up)
     #print("Q2 down weights:", q2_down)
+
+    q2_nominal = [1]
+    q2_up = [1]
+    q2_down = [1]
+    if isMC:
+        q2_nominal = GetQ2Weights(LHEScaleWeight_ak)
+        q2_up = GetQ2Weights(LHEScaleWeight_ak, var="up")
+        q2_down = GetQ2Weights(LHEScaleWeight_ak, var="down")
+
+    q2_N[0] = q2_nominal[0]
+    q2_U[0] = q2_up[0]
+    q2_D[0] = q2_down[0]
+
+
     foundTop = False
     foundAntitop = False
     top_pt = 0.0
