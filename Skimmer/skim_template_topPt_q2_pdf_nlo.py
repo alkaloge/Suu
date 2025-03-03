@@ -36,8 +36,74 @@ def LoadHisto(file, hist_name):
 
 
 
-
 def GetTheoryCorr(pt, IOV, correction_histograms, process, debug=False):
+    """
+    Calculate the theory correction factor using ROOT histograms.
+    process: "wjets" or "zjets"
+    """
+    IOV = str(IOV)
+    is_2016 = '2016' in IOV or 'preV' in IOV
+    correction = 1.0
+
+    # Determine process type
+    if process.lower() == "wjets":
+        # W+jets configuration
+        ewk_key = "wjets_ewk"
+        qcd_key = "wjets_qcd_2017" if not is_2016 else "wjets_ewk"
+        
+        # Get histograms
+        ewk_hist = correction_histograms.get(ewk_key, None)
+        qcd_hist = correction_histograms.get(qcd_key, None)
+
+    elif process.lower() in ("zjets", "znn"):
+        # Z+jets configuration
+        ewk_key = "zjets_ewk"
+        qcd_key = "zjets_qcd_2017" if not is_2016 else "zjets_qcd"
+        
+        # Get histograms
+        ewk_hist = correction_histograms.get(ewk_key, None)
+        qcd_hist = correction_histograms.get(qcd_key, None)
+
+    else:
+        raise ValueError(f"Unsupported process: {process}")
+
+    if debug:
+        print(f"\n=== Theory Correction Debug ===")
+        print(f"Process: {process}, IOV: {IOV}")
+        print(f"EWK key: {ewk_key}, Hist: {bool(ewk_hist)}")
+        print(f"QCD key: {qcd_key}, Hist: {bool(qcd_hist)}")
+        print(f"Input pt: {pt:.1f}")
+
+    # Calculate correction
+    if ewk_hist and qcd_hist:
+        ewk_bin = ewk_hist.FindBin(pt)
+        qcd_bin = qcd_hist.FindBin(pt)
+        correction = ewk_hist.GetBinContent(ewk_bin) * qcd_hist.GetBinContent(qcd_bin)
+        
+        if debug:
+            print(f"EWK value: {ewk_hist.GetBinContent(ewk_bin):.3f}")
+            print(f"QCD value: {qcd_hist.GetBinContent(qcd_bin):.3f}")
+            print(f"Final correction: {correction:.3f}")
+
+    return correction
+
+
+def print_correction_histograms(correction_histograms):
+    print("\n=== Contents of correction_histograms ===")
+    for key, hist in correction_histograms.items():
+        if hist:
+            print(f"Key: {key}")
+            print(f"  Histogram Name: {hist.GetName()}")
+            print(f"  Number of Bins: {hist.GetNbinsX()}")
+            print(f"  X-axis Range: [{hist.GetXaxis().GetXmin()}, {hist.GetXaxis().GetXmax()}]")
+            print(f"  Integral: {hist.Integral()}")
+        else:
+            print(f"Key: {key} -> Histogram is None or not loaded properly")
+    print("=======================================\n")
+
+
+
+def GetTheoryCorr_v0(pt, IOV, correction_histograms, process, debug=False):
     """
     Calculate the theory correction factor using ROOT histograms.
     process: "wjets", "zjets", "dy", "znn", etc.
@@ -86,73 +152,6 @@ def GetTheoryCorr(pt, IOV, correction_histograms, process, debug=False):
         else:
             return 1.0  # Default value if histograms are missing
     elif is_DY:  # Handle zjets and Znn as part of DY
-        if ewk_hist and qcd_hist:
-            ewk_corr = ewk_hist.GetBinContent(ewk_hist.FindBin(pt))
-            if '2016' in IOV or 'preV' in IOV:
-                qcd_corr = qcd_hist.GetBinContent(qcd_hist.FindBin(pt))
-            else:
-                qcd_corr = qcd_ewk_hist.GetBinContent(qcd_ewk_hist.FindBin(pt)) if qcd_ewk_hist else 1.0
-            return ewk_corr * qcd_corr
-        else:
-            return 1.0  # Default value if histograms are missing
-    elif process == "dy":
-        if qcd_hist:
-            return qcd_hist.GetBinContent(qcd_hist.FindBin(pt))
-        else:
-            return 1.0  # Default value if histogram is missing
-    elif process == "znn":
-        if qcd_hist:
-            return qcd_hist.GetBinContent(qcd_hist.FindBin(pt))
-        else:
-            return 1.0  # Default value if histogram is missing
-    else:
-        return 1.0  # Default value for unknown processes
-
-
-
-def GetTheoryCorrr(pt, IOV, correction_histograms, process):
-    """
-    Calculate the theory correction factor using ROOT histograms.
-    process: "wjets", "zjets", "dy", "znn", etc.
-    """
-    pt = 300+pt
-    IOV = str(IOV)
-    
-    # Determine if the process is DY (zjets or Znn)
-    is_DY = (process == "zjets" or process == "znn")
-
-    # Get the correction histograms for the given process
-    if process == "wjets":
-        ewk_hist = correction_histograms.get("w_ewk", None)
-        qcd_hist = correction_histograms.get("w_qcd", None)
-        qcd_ewk_hist = correction_histograms.get("w_qcd_ewk", None)
-    elif is_DY:  # Handle zjets and Znn as part of DY
-        ewk_hist = correction_histograms.get("z_ewk", None)
-        qcd_hist = correction_histograms.get("z_qcd", None)
-        qcd_ewk_hist = correction_histograms.get("z_qcd_ewk", None)
-    elif process == "dy":
-        qcd_hist = correction_histograms.get("dy_qcd_2017", None)
-    elif process == "znn":
-        qcd_hist = correction_histograms.get("znn_qcd_2017", None)
-    else:
-        raise ValueError(f"Unknown process: {process}")
-
-    # Debugging print statement
-    print('Debug Info:', ewk_hist, qcd_hist, pt, process, correction_histograms)
-
-    # Calculate the correction factor
-    if process == "wjets":
-        if ewk_hist and qcd_hist:
-            ewk_corr = ewk_hist.GetBinContent(ewk_hist.FindBin(pt))
-            if '2016' in IOV or 'preV' in IOV:
-                qcd_corr = qcd_hist.GetBinContent(qcd_hist.FindBin(pt))
-            else:
-                qcd_corr = qcd_ewk_hist.GetBinContent(qcd_ewk_hist.FindBin(pt)) if qcd_ewk_hist else 1.0
-            return ewk_corr * qcd_corr
-        else:
-            return 1.0  # Default value if histograms are missing
-    elif is_DY:  # Handle zjets and Znn as part of DYa
-        print('this is ok,', is_DY, process, ewk_hist)
         if ewk_hist and qcd_hist:
             ewk_corr = ewk_hist.GetBinContent(ewk_hist.FindBin(pt))
             if '2016' in IOV or 'preV' in IOV:
@@ -508,6 +507,7 @@ print(('will skim from ', start_index, 'to event', end_index))
 # Iterate over the selected range of events
 
 # First loop: Calculate the sum of weights for normalization
+'''
 correction_histograms={}
 if isMC:
 
@@ -550,6 +550,61 @@ if isMC:
     else:
         print("Error: Failed to open file: ./kfac_znn_filter.root")
 
+'''
+
+#################################33## this is the latest method to get the nlo corrections, 
+#W+jets
+#ewk  =  merged_kfactors_wjets.root : kfactor_monojet_ewk for all IOVs
+#qcd =   merged_kfactors_wjets.root : kfactor_monojet_ewk for 2016/2016APV
+#         2017_gen_v_pt_qcd_sf.root : wjet_dress_inclusive for 2017/2018
+#
+#Z+jets
+#ewk  =  erged_kfactors_zjets.root : kfactor_monojet_ewk for all IOVs
+#qcd =   merged_kfactors_zjets.root : kfactor_monojet_qcd for 2016/2016APV
+#        kfac_dy_filter.root :  kfac_dy_filter for 2017/2018
+
+correction_histograms = {}
+
+if isMC:
+    # Load histograms for W+jets
+    file_wjets = r.TFile("./merged_kfactors_wjets.root")
+    if file_wjets.IsOpen():
+        print("Successfully opened file: ./merged_kfactors_wjets.root")
+        correction_histograms["wjets_ewk"] = LoadHisto(file_wjets, "kfactor_monojet_ewk")
+        correction_histograms["wjets_qcd"] = LoadHisto(file_wjets, "kfactor_monojet_qcd")  # For 2016/2016APV
+        file_wjets.Close()
+    else:
+        print("Error: Failed to open file: ./merged_kfactors_wjets.root")
+
+    # Load histograms for Z+jets
+    file_zjets = r.TFile("./merged_kfactors_zjets.root")
+    if file_zjets.IsOpen():
+        print("Successfully opened file: ./merged_kfactors_zjets.root")
+        correction_histograms["zjets_ewk"] = LoadHisto(file_zjets, "kfactor_monojet_ewk")
+        correction_histograms["zjets_qcd"] = LoadHisto(file_zjets, "kfactor_monojet_qcd")  # For 2016/2016APV
+        file_zjets.Close()
+    else:
+        print("Error: Failed to open file: ./merged_kfactors_zjets.root")
+
+    # Load histograms for W+jets QCD in 2017/2018
+    file_wjets_qcd_2017 = r.TFile("./2017_gen_v_pt_qcd_sf.root")
+    if file_wjets_qcd_2017.IsOpen():
+        print("Successfully opened file: ./2017_gen_v_pt_qcd_sf.root")
+        correction_histograms["wjets_qcd_2017"] = LoadHisto(file_wjets_qcd_2017, "wjet_dress_inclusive")
+        file_wjets_qcd_2017.Close()
+    else:
+        print("Error: Failed to open file: ./2017_gen_v_pt_qcd_sf.root")
+
+    # Load histograms for Z+jets QCD in 2017/2018
+    file_zjets_qcd_2017 = r.TFile("./kfac_dy_filter.root")
+    if file_zjets_qcd_2017.IsOpen():
+        print("Successfully opened file: ./kfac_dy_filter.root")
+        correction_histograms["zjets_qcd_2017"] = LoadHisto(file_zjets_qcd_2017, "kfac_dy_filter")
+        file_zjets_qcd_2017.Close()
+    else:
+        print("Error: Failed to open file: ./kfac_dy_filter.root")
+
+    print_correction_histograms(correction_histograms)
 
     #for i_event in range(num_events):
     for i_event in range(start_index, end_index):
