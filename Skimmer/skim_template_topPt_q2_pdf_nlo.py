@@ -113,9 +113,11 @@ def GetTheoryCorr(pt, IOV, correction_histograms, process, debug=False):
     else:
         if debug:
             print("Warning: Missing histograms. Using default correction = 1.0")
-    if special_case == 1 : print ("boson pt less than histo_lower_bound", pt, correction)
-    elif special_case == 2 : print ("boson pt higher than histo_lower_bound", pt, correction)
-    else: print ("boson pt within histo_ bounds", pt, correction)
+    if debug:
+        if special_case == 1 : print ("boson pt less than histo_lower_bound", pt, correction)
+        elif special_case == 2 : print ("boson pt higher than histo_lower_bound", pt, correction)
+        else: print ("boson pt within histo_ bounds", pt, correction)
+
     return correction
 
 
@@ -797,7 +799,7 @@ for i_event in range(start_index, end_index):
     Ne=0
     counter=1
     
-    if i_event%5000==0 : print(("processing event", i_event))
+    if i_event%10000==0 : print(("processing event", i_event))
     input_tree.GetEntry(i_event)
 
     Nev_All +=1
