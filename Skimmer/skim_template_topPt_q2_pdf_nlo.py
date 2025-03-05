@@ -35,8 +35,92 @@ def LoadHisto(file, hist_name):
     return hist_clone
 
 
-
 def GetTheoryCorr(pt, IOV, correction_histograms, process, debug=False):
+    """
+    Calculate the theory correction factor using ROOT histograms.
+    process: "wjets" or "zjets"
+    """
+    IOV = str(IOV)
+    is_2016 = '2016' in IOV or 'preV' in IOV
+    correction = 1.0
+
+    # Determine process type
+    if process.lower() == "wjets":
+        # W+jets configuration
+        ewk_key = "wjets_ewk"
+        qcd_key = "wjets_qcd_2017" if not is_2016 else "wjets_ewk"
+
+        # Get histograms
+        ewk_hist = correction_histograms.get(ewk_key, None)
+        qcd_hist = correction_histograms.get(qcd_key, None)
+
+    elif process.lower() in ("zjets", "znn"):
+        # Z+jets configuration
+        ewk_key = "zjets_ewk"
+        qcd_key = "zjets_qcd_2017" if not is_2016 else "zjets_qcd"
+
+        # Get histograms
+        ewk_hist = correction_histograms.get(ewk_key, None)
+        qcd_hist = correction_histograms.get(qcd_key, None)
+
+    else:
+        raise ValueError(f"Unsupported process: {process}")
+    special_case = 0
+    if debug:
+        print(f"\n=== Theory Correction Debug ===")
+        print(f"Process: {process}, IOV: {IOV}")
+        print(f"EWK key: {ewk_key}, Hist: {bool(ewk_hist)}")
+        print(f"QCD key: {qcd_key}, Hist: {bool(qcd_hist)}")
+        print(f"Input pt: {pt:.1f}")
+
+    # Calculate correction
+    if ewk_hist and qcd_hist:
+        # Get histogram bounds
+        ewk_lower_bound = ewk_hist.GetXaxis().GetXmin()
+        ewk_upper_bound = ewk_hist.GetXaxis().GetXmax()
+        qcd_lower_bound = qcd_hist.GetXaxis().GetXmin()
+        qcd_upper_bound = qcd_hist.GetXaxis().GetXmax()
+
+        # Handle EWK histogram
+        if pt < ewk_lower_bound:
+            ewk_bin = 1  # First bin
+            special_case = 1
+        elif pt > ewk_upper_bound:
+            ewk_bin = ewk_hist.GetNbinsX()  # Last bin
+            special_case = 2
+        else:
+            ewk_bin = ewk_hist.FindBin(pt)
+
+        # Handle QCD histogram
+        if pt < qcd_lower_bound:
+            qcd_bin = 1  # First bin
+            special_case = 1
+        elif pt > qcd_upper_bound:
+            qcd_bin = qcd_hist.GetNbinsX()  # Last bin
+            special_case = 2
+        else:
+            qcd_bin = qcd_hist.FindBin(pt)
+
+        # Get bin contents
+        ewk_value = ewk_hist.GetBinContent(ewk_bin)
+        qcd_value = qcd_hist.GetBinContent(qcd_bin)
+        correction = ewk_value * qcd_value
+
+        if debug:
+            print(f"EWK bin: {ewk_bin}, Value: {ewk_value:.3f}")
+            print(f"QCD bin: {qcd_bin}, Value: {qcd_value:.3f}")
+            print(f"Final correction: {correction:.3f}")
+    else:
+        if debug:
+            print("Warning: Missing histograms. Using default correction = 1.0")
+    if special_case == 1 : print ("boson pt less than histo_lower_bound", pt, correction)
+    elif special_case == 2 : print ("boson pt higher than histo_lower_bound", pt, correction)
+    else: print ("boson pt within histo_ bounds", pt, correction)
+    return correction
+
+
+
+def GetTheoryCorr_noedged(pt, IOV, correction_histograms, process, debug=False):
     """
     Calculate the theory correction factor using ROOT histograms.
     process: "wjets" or "zjets"
@@ -84,7 +168,7 @@ def GetTheoryCorr(pt, IOV, correction_histograms, process, debug=False):
             print(f"EWK value: {ewk_hist.GetBinContent(ewk_bin):.3f}")
             print(f"QCD value: {qcd_hist.GetBinContent(qcd_bin):.3f}")
             print(f"Final correction: {correction:.3f}")
-
+    #print ('some debug', pt, process, correction)
     return correction
 
 
@@ -248,7 +332,7 @@ def GetTopPtWeight(t_pt, tbar_pt, var="nominal"):
 
 
 # Open the nanoAOD file
-input_file = r.TFile.Open("inFileDY.root")
+input_file = r.TFile.Open("inFile.root")
 input_tree = input_file.Get("Events")
 num_events = input_tree.GetEntries()
 
@@ -501,7 +585,7 @@ else:
 
 start_index=0
 end_index =  num_events
-end_index=2000
+#end_index=2000
 
 print(('will skim from ', start_index, 'to event', end_index))
 # Iterate over the selected range of events
@@ -748,7 +832,10 @@ for i_event in range(start_index, end_index):
                 nlo_corr[0] = 1.0  # Default value if no Z/W boson is found
             
             # Normalize the NLO correction
-            nlo_corr_norm[0] = nlo_corr[0] / Nev_nlo_corr if Nev_nlo_corr > 0 else 1.0
+            nlo_corr_norm[0] = nlo_corr[0] /( Nev_pdf_N / Nev_nlo_corr) if Nev_nlo_corr > 0 else 1.0
+
+
+
 
         # Fill histograms
 
@@ -831,17 +918,18 @@ for i_event in range(start_index, end_index):
 
 
     # Normalize the weights
-    pdf_N_norm[0] = pdf_N[0] / Nev_pdf_N
-    pdf_U_norm[0] = pdf_U[0] / Nev_pdf_U
-    pdf_D_norm[0] = pdf_D[0] / Nev_pdf_D
+    pdf_N_norm[0] = pdf_N[0] 
+    pdf_U_norm[0] = pdf_U[0] / ( Nev_pdf_N / Nev_pdf_U)
+    pdf_D_norm[0] = pdf_D[0] / ( Nev_pdf_N / Nev_pdf_D)
 
-    q2_N_norm[0] = q2_N[0] / Nev_q2_N
-    q2_U_norm[0] = q2_U[0] / Nev_q2_U
-    q2_D_norm[0] = q2_D[0] / Nev_q2_D
+    q2_N_norm[0] = q2_N[0] 
+    q2_U_norm[0] = q2_U[0] / ( Nev_q2_N / Nev_q2_U)
+    q2_D_norm[0] = q2_D[0] / ( Nev_q2_N / Nev_q2_D)
 
-    topPtWeight_N_norm[0] = topPtWeight_N[0] / Nev_topPtWeight_N
-    topPtWeight_U_norm[0] = topPtWeight_U[0] / Nev_topPtWeight_U
-    topPtWeight_W_norm[0] = topPtWeight_W[0] / Nev_topPtWeight_W
+
+    topPtWeight_N_norm[0] = topPtWeight_N[0] / (Nev_topPtWeight_U / Nev_topPtWeight_N)
+    topPtWeight_U_norm[0] = topPtWeight_U[0]
+    topPtWeight_W_norm[0] = topPtWeight_W[0] / (Nev_topPtWeight_U / Nev_topPtWeight_W)
 
 
 
