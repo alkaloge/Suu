@@ -339,6 +339,7 @@ input_tree = input_file.Get("Events")
 num_events = input_tree.GetEntries()
 
 
+
 #input_tree.Scan("genWeight")
 # Create a new output ROOT file
 output_file = r.TFile.Open("selected_events.root", "RECREATE")
@@ -390,6 +391,9 @@ for key in keys:
 #output_tree = input_tree.CopyTree("")
 output_tree = input_tree.CloneTree(0)  # Clone the structure of the input tree
 
+output_tree.SetAutoFlush(100 * 1024) # Flush baskets every 1MB
+#output_tree.SetAutoSave(200 * 1024)
+#output_tree.AutoSave("")  # This writes the structure with zero entries
 
 
 # Define arrays to store PDF, Q2, and top pT variations
@@ -450,6 +454,8 @@ output_tree.Branch("nlo_corr_norm", nlo_corr_norm, "nlo_corr_norm/F")
 nlo_corr[0] = 1.0  # Default value if no Z/W boson or data
 nlo_corr_norm[0] = 1.0  # Default value if no Z/W boson or data
 
+
+
 # Variables to store the sum of weights for normalization
 Nev_pdf_N = 0.0
 Nev_pdf_U = 0.0
@@ -501,6 +507,41 @@ hist_N_el = r.TH1F("hist_N_el", "N el after Cuts", num_cuts, 1, num_cuts+1)
 #hist_N_el = r.TH1F("hist_N_el", "N el after Cuts", num_cuts, 1, num_cuts+1)
 
 
+# Nominal ttbar mass
+hist_ttbar_mass = r.TH1F("hist_ttbar_mass", "hist_ttbar_mass", 120, 300, 1500)
+
+# Q2 variations
+hist_ttbar_mass_q2_N = r.TH1F("hist_ttbar_mass_q2_N", "hist_ttbar_mass_q2_N", 120, 300, 1500)
+hist_ttbar_mass_q2_U = r.TH1F("hist_ttbar_mass_q2_U", "hist_ttbar_mass_q2_U", 120, 300, 1500)
+hist_ttbar_mass_q2_D = r.TH1F("hist_ttbar_mass_q2_D", "hist_ttbar_mass_q2_D", 120, 300, 1500)
+
+# PDF variations
+hist_ttbar_mass_pdf_N = r.TH1F("hist_ttbar_mass_pdf_N", "hist_ttbar_mass_pdf_N", 120, 300, 1500)
+hist_ttbar_mass_pdf_U = r.TH1F("hist_ttbar_mass_pdf_U", "hist_ttbar_mass_pdf_U", 120, 300, 1500)
+hist_ttbar_mass_pdf_D = r.TH1F("hist_ttbar_mass_pdf_D", "hist_ttbar_mass_pdf_D", 120, 300, 1500)
+
+# TopPt variations
+hist_ttbar_mass_topPt_N = r.TH1F("hist_ttbar_mass_topPt_N", "hist_ttbar_mass_topPt_N", 120, 300, 1500)
+hist_ttbar_mass_topPt_U = r.TH1F("hist_ttbar_mass_topPt_U", "hist_ttbar_mass_topPt_U", 120, 300, 1500)
+hist_ttbar_mass_topPt_W = r.TH1F("hist_ttbar_mass_topPt_W", "hist_ttbar_mass_topPt_W", 120, 300, 1500)
+
+# Normalized Q2
+hist_ttbar_mass_q2_N_norm = r.TH1F("hist_ttbar_mass_q2_N_norm", "hist_ttbar_mass_q2_N_norm", 120, 300, 1500)
+hist_ttbar_mass_q2_U_norm = r.TH1F("hist_ttbar_mass_q2_U_norm", "hist_ttbar_mass_q2_U_norm", 120, 300, 1500)
+hist_ttbar_mass_q2_D_norm = r.TH1F("hist_ttbar_mass_q2_D_norm", "hist_ttbar_mass_q2_D_norm", 120, 300, 1500)
+
+# Normalized PDF
+hist_ttbar_mass_pdf_N_norm = r.TH1F("hist_ttbar_mass_pdf_N_norm", "hist_ttbar_mass_pdf_N_norm", 120, 300, 1500)
+hist_ttbar_mass_pdf_U_norm = r.TH1F("hist_ttbar_mass_pdf_U_norm", "hist_ttbar_mass_pdf_U_norm", 120, 300, 1500)
+hist_ttbar_mass_pdf_D_norm = r.TH1F("hist_ttbar_mass_pdf_D_norm", "hist_ttbar_mass_pdf_D_norm", 120, 300, 1500)
+
+# Normalized TopPt
+hist_ttbar_mass_topPt_N_norm = r.TH1F("hist_ttbar_mass_topPt_N_norm", "hist_ttbar_mass_topPt_N_norm", 120, 300, 1500)
+hist_ttbar_mass_topPt_U_norm = r.TH1F("hist_ttbar_mass_topPt_U_norm", "hist_ttbar_mass_topPt_U_norm", 120, 300, 1500)
+hist_ttbar_mass_topPt_W_norm = r.TH1F("hist_ttbar_mass_topPt_W_norm", "hist_ttbar_mass_topPt_W_norm", 120, 300, 1500)
+
+
+
 
 cut_bins = {
     1: "Inclusive",
@@ -536,11 +577,18 @@ for bin_number, bin_label in list(cut_bins.items()):
 # Add new branches for GenPart and top pt weights
 genPart_pdgId = np.zeros(200, dtype=np.int32)  # Use 32-bit integers
 genPart_pt = np.zeros(200, dtype=np.float32)
+genPart_eta = np.zeros(200, dtype=np.float32)
+genPart_phi = np.zeros(200, dtype=np.float32)
 genPart_status = np.zeros(200, dtype=np.int32)  # Use 32-bit integers
+genPart_mass = np.zeros(200, dtype=np.float32)  # Use 32-bit integers
 
-input_tree.SetBranchAddress("GenPart_pdgId", genPart_pdgId)
-input_tree.SetBranchAddress("GenPart_pt", genPart_pt)
-input_tree.SetBranchAddress("GenPart_status", genPart_status)
+if isMC:
+    input_tree.SetBranchAddress("GenPart_pdgId", genPart_pdgId)
+    input_tree.SetBranchAddress("GenPart_pt", genPart_pt)
+    input_tree.SetBranchAddress("GenPart_status", genPart_status)
+    input_tree.SetBranchAddress("GenPart_mass", genPart_mass)
+    input_tree.SetBranchAddress("GenPart_eta", genPart_eta)
+    input_tree.SetBranchAddress("GenPart_phi", genPart_phi)
 
 
 # Create histograms for top pt weights
@@ -567,7 +615,6 @@ Nev_LeadingJetCut=0
 Nev_SubLeadingJetCut=0
 Nev_All=0
 Nev_AllGenW=0.
-num_events = input_tree.GetEntries()
 
 '''
 user_input = sys.argv[1]
@@ -587,7 +634,7 @@ else:
 
 start_index=0
 end_index =  num_events
-#end_index=2000
+#end_index=10000
 
 print(('will skim from ', start_index, 'to event', end_index))
 # Iterate over the selected range of events
@@ -695,7 +742,7 @@ if isMC:
     #for i_event in range(num_events):
     for i_event in range(start_index, end_index):
         input_tree.GetEntry(i_event)
-        if i_event%100==0 : print(("processing event", i_event))
+        if i_event%10000==0 : print(("processing event", i_event))
         
         # Calculate PDF weights
         try:
@@ -786,8 +833,10 @@ if isMC:
 # Second loop: Normalize the top pT weights and store them in branches
 
 
+#hist_EventCount.SetBinContent(0,0)
 print(('will skim from ', start_index, 'to event', end_index))
 # Iterate over the selected range of events
+print ('Will skim {} events'.format(end_index))
 for i_event in range(start_index, end_index):
 
 
@@ -799,7 +848,7 @@ for i_event in range(start_index, end_index):
     Ne=0
     counter=1
     
-    if i_event%10000==0 : print(("processing event", i_event))
+    if i_event%1000==0 : print(("processing event", i_event))
     input_tree.GetEntry(i_event)
 
     Nev_All +=1
@@ -834,7 +883,7 @@ for i_event in range(start_index, end_index):
                 nlo_corr[0] = 1.0  # Default value if no Z/W boson is found
             
             # Normalize the NLO correction
-            nlo_corr_norm[0] = nlo_corr[0] /( Nev_pdf_N / Nev_nlo_corr) if Nev_nlo_corr > 0 else 1.0
+            nlo_corr_norm[0] = nlo_corr[0] *( Nev_pdf_N / Nev_nlo_corr) if Nev_nlo_corr > 0 else 1.0
 
 
 
@@ -848,25 +897,6 @@ for i_event in range(start_index, end_index):
         try : LHEScaleWeight_ak = np.array(input_tree.LHEScaleWeight)
         except AttributeError : LHEScaleWeight_ak = np.ones(1)
     
-    ''' 
-    # Get Q2 weights
-    q2_nominal=[]
-    q2_up=[]
-    q2_down=[]
-    q2_nominal.append(1)
-    q2_up.append(1)
-    q2_down.append(1)
-    if isMC:
-        q2_nominal = GetQ2Weights(LHEScaleWeight_ak)
-        q2_up = GetQ2Weights(LHEScaleWeight_ak, var="up")
-        q2_down = GetQ2Weights(LHEScaleWeight_ak, var="down")
-
-
-    q2_N[0] = q2_nominal[0]
-    q2_U[0] = q2_up[0]
-    q2_D[0] = q2_down[0]
-
-    ''' 
 
     # Calculate PDF weights
     if isMC:
@@ -897,8 +927,18 @@ for i_event in range(start_index, end_index):
     # Calculate top pT weights
     foundTop = False
     foundAntitop = False
-    top_pt = 0.0
-    antitop_pt = 0.0
+    top_pt0 = 0.0
+    top_eta0 = 0.0
+    top_phi0 = 0.0
+    top_mass0 = 0.0
+    antitop_pt0 = 0.0
+    antitop_eta0 = 0.0
+    antitop_phi0 = 0.0
+    antitop_mass0 = 0.0
+
+    ttbarMass = -1.
+    foundTop0 = False
+    foundAntitop0 = False
 
     if isMC:
         for i_gen in range(min(input_tree.nGenPart, len(genPart_pdgId))):
@@ -908,6 +948,24 @@ for i_event in range(start_index, end_index):
             if genPart_pdgId[i_gen] == -6 and genPart_status[i_gen] == 62:
                 antitop_pt = genPart_pt[i_gen]
                 foundAntitop = True
+            
+
+            if genPart_pdgId[i_gen] == 6 and genPart_status[i_gen] == 22:
+                #print ('found top, status 22, mass', genPart_mass[i_gen])
+                top_pt0 = genPart_pt[i_gen]
+                top_eta0 = genPart_eta[i_gen]
+                top_phi0 = genPart_phi[i_gen]
+                top_mass0= genPart_mass[i_gen]
+                foundTop0 = True
+            if genPart_pdgId[i_gen] == -6 and genPart_status[i_gen] == 22:
+                #print ('found top, status -22, mass', genPart_mass[i_gen])
+                antitop_pt0 = genPart_pt[i_gen]
+                antitop_eta0 = genPart_eta[i_gen]
+                antitop_phi0 = genPart_phi[i_gen]
+                antitop_mass0= genPart_mass[i_gen]
+                foundAntitop0 = True
+
+
 
         if foundTop and foundAntitop:
             topPtWeight_N[0] = GetTopPtWeight(top_pt, antitop_pt, "nominal")
@@ -918,20 +976,59 @@ for i_event in range(start_index, end_index):
             topPtWeight_U[0] = 1.0
             topPtWeight_W[0] = 1.0
 
+        if foundTop0 and foundAntitop0:
+            #ttbarMass = sqrt( (top_E+antitop_E)**2 - (top_x+antitop_x)**2 - (top_y+antitop_y)**2 - (top_z+antitop_z)**2 )
+            #ttbarMass = 10 #sqrt( (top_E+antitop_E)**2 - (top_x+antitop_x)**2 - (top_y+antitop_y)**2 - (top_z+antitop_z)**2 )
+            #print ('found it!', ttbarMass)
+            topV = r.TLorentzVector()
+            antitopV = r.TLorentzVector()
+            topV.SetPtEtaPhiM(top_pt0, top_eta0, top_phi0, top_mass0)
+            antitopV.SetPtEtaPhiM(antitop_pt0, antitop_eta0, antitop_phi0, antitop_mass0)
+            ttbarMass = (topV+antitopV).M()
+            if ttbarMass > 0 : 
+                hist_ttbar_mass.Fill(ttbarMass) 
+                hist_ttbar_mass_q2_N.Fill(ttbarMass, q2_N[0])
+                hist_ttbar_mass_q2_U.Fill(ttbarMass, q2_U[0])
+                hist_ttbar_mass_q2_D.Fill(ttbarMass, q2_D[0])
+                hist_ttbar_mass_pdf_N.Fill(ttbarMass, q2_N[0])
+                hist_ttbar_mass_pdf_U.Fill(ttbarMass, q2_U[0])
+                hist_ttbar_mass_pdf_D.Fill(ttbarMass, q2_D[0])
+                hist_ttbar_mass_topPt_N.Fill(ttbarMass, topPtWeight_N[0])
+                hist_ttbar_mass_topPt_U.Fill(ttbarMass, topPtWeight_U[0])
+                hist_ttbar_mass_topPt_W.Fill(ttbarMass, topPtWeight_W[0])
+                 
+                hist_ttbar_mass_q2_N_norm.Fill(ttbarMass, q2_N_norm[0])
+                hist_ttbar_mass_q2_U_norm.Fill(ttbarMass, q2_U_norm[0])
+                hist_ttbar_mass_q2_D_norm.Fill(ttbarMass, q2_D_norm[0])
+                hist_ttbar_mass_pdf_N_norm.Fill(ttbarMass, q2_N_norm[0])
+                hist_ttbar_mass_pdf_U_norm.Fill(ttbarMass, q2_U_norm[0])
+                hist_ttbar_mass_pdf_D_norm.Fill(ttbarMass, q2_D_norm[0])
+                hist_ttbar_mass_topPt_N_norm.Fill(ttbarMass, topPtWeight_N_norm[0])
+                hist_ttbar_mass_topPt_U_norm.Fill(ttbarMass, topPtWeight_U_norm[0])
+                hist_ttbar_mass_topPt_W_norm.Fill(ttbarMass, topPtWeight_W_norm[0])
 
-    # Normalize the weights
-    pdf_N_norm[0] = pdf_N[0] 
-    pdf_U_norm[0] = pdf_U[0] / ( Nev_pdf_N / Nev_pdf_U)
-    pdf_D_norm[0] = pdf_D[0] / ( Nev_pdf_N / Nev_pdf_D)
-
-    q2_N_norm[0] = q2_N[0] 
-    q2_U_norm[0] = q2_U[0] / ( Nev_q2_N / Nev_q2_U)
-    q2_D_norm[0] = q2_D[0] / ( Nev_q2_N / Nev_q2_D)
 
 
-    topPtWeight_N_norm[0] = topPtWeight_N[0] / (Nev_topPtWeight_U / Nev_topPtWeight_N)
-    topPtWeight_U_norm[0] = topPtWeight_U[0]
-    topPtWeight_W_norm[0] = topPtWeight_W[0] / (Nev_topPtWeight_U / Nev_topPtWeight_W)
+        # Normalize the weights
+        pdf_N_norm[0] = pdf_N[0] 
+        if  Nev_pdf_U > 0.  : pdf_U_norm[0] = pdf_U[0] * ( Nev_pdf_N / Nev_pdf_U)
+        else : pdf_U_norm[0] = 1.
+        if Nev_pdf_D > 0. : pdf_D_norm[0] = pdf_D[0] * ( Nev_pdf_N / Nev_pdf_D)
+        else : pdf_D_norm[0] = 1.
+
+
+        q2_N_norm[0] = q2_N[0] 
+        if Nev_q2_U > 0. : q2_U_norm[0] = q2_U[0] * ( Nev_q2_N / Nev_q2_U)
+        else : q2_U_norm[0] = 1.
+        if Nev_q2_D > 0. : q2_D_norm[0] = q2_D[0] * ( Nev_q2_N / Nev_q2_D)
+        else : q2_D_norm[0] = 1
+
+
+        if Nev_topPtWeight_N > 0. : topPtWeight_N_norm[0] = topPtWeight_N[0] * (Nev_topPtWeight_U / Nev_topPtWeight_N)
+        else : topPtWeight_N_norm[0] = 1.
+        topPtWeight_U_norm[0] = topPtWeight_U[0]
+        if Nev_topPtWeight_W > 0. : topPtWeight_W_norm[0] = topPtWeight_W[0] * (Nev_topPtWeight_U / Nev_topPtWeight_W)
+        else : topPtWeight_W_norm[0] = 1.
 
 
 
@@ -960,6 +1057,7 @@ for i_event in range(start_index, end_index):
     hist_nlo_corr.Fill(counter, nlo_corr[0])  # Fill for all events
     hist_nlo_corr_norm.Fill(counter, nlo_corr_norm[0])  # Fill for all events
 
+
     hist_N_mu.Fill(counter, input_tree.nMuon)
     hist_N_el.Fill(counter, input_tree.nElectron)
     #topPt
@@ -984,6 +1082,7 @@ for i_event in range(start_index, end_index):
             hist_el_pt.Fill(input_tree.Electron_pt[j])
         if input_tree.Electron_pt[j] > 100:
             Ne+=1
+
 
     if (Ne + Nm) < 1 : continue
     Nev_LeptonCut +=1
@@ -1087,12 +1186,20 @@ for i_event in range(start_index, end_index):
     counter+=1
 
 
-
-
+    #if Nev_SubLeadingJetCut > 22000 : 
+    #print ('have already', counter, Nev_SubLeadingJetCut)
     output_tree.Fill()
+    if i_event == end_index : 
+        print ('reaced the end of it!') 
 
     #print 'counters', counter, Nev_All, Nev_LeptonCut, Nev_LeadingJetCut, Nev_SubLeadingJetCut, Nev_AllGenW, nmuon, nelectron
 
+print('skim ended with', counter, Nev_SubLeadingJetCut, ' events that made it!')
+
+#input_file.cd()
+print('1')
+#input_file.Close()
+print('2')
 
 hist_EventCount.Fill(1,Nev_All)
 hist_EventCount.Fill(2,Nev_LeptonCut)
@@ -1102,19 +1209,17 @@ hist_EventCountGenW.Fill(0,Nev_AllGenW)
 
 
 
-
+#hist_EventCount.Delete()
+print('3')
+#hist_EventCountGenW.Delete()
+print('4')
 output_file.Write()
-output_file.Close()
+print('5')
+#aoutput_file.cd()
+#print('3')
+#output_file.Write()
+#print('4')
+#print('5')
 
-# Close the input file
-input_file.Close()
-
-
-# Close the correction histogram files
-#if process == "zjets":
-#    zjets_file.Close()
-#    dy_filter_file.Close()
-#elif process == "wjets":
-#    wjets_file.Close()
-
-
+#print('end')
+exit()
