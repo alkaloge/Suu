@@ -468,6 +468,9 @@ Nev_q2_D = 0.0
 Nev_topPtWeight_N = 0.0
 Nev_topPtWeight_U = 0.0
 Nev_topPtWeight_W = 0.0
+Nev_topPtWeight_N_norm = 0.0
+Nev_topPtWeight_U_norm = 0.0
+Nev_topPtWeight_W_norm = 0.0
 
 
 Nev_nlo_corr = 0.0
@@ -976,6 +979,29 @@ for i_event in range(start_index, end_index):
             topPtWeight_U[0] = 1.0
             topPtWeight_W[0] = 1.0
 
+
+        # Normalize the weights
+        pdf_N_norm[0] = pdf_N[0] 
+        if  Nev_pdf_U > 0.  : pdf_U_norm[0] = pdf_U[0] * ( Nev_pdf_N / Nev_pdf_U)
+        else : pdf_U_norm[0] = 1.
+        if Nev_pdf_D > 0. : pdf_D_norm[0] = pdf_D[0] * ( Nev_pdf_N / Nev_pdf_D)
+        else : pdf_D_norm[0] = 1.
+
+
+        q2_N_norm[0] = q2_N[0] 
+        if Nev_q2_U > 0. : q2_U_norm[0] = q2_U[0] * ( Nev_q2_N / Nev_q2_U)
+        else : q2_U_norm[0] = 1.
+        if Nev_q2_D > 0. : q2_D_norm[0] = q2_D[0] * ( Nev_q2_N / Nev_q2_D)
+        else : q2_D_norm[0] = 1
+
+
+        if Nev_topPtWeight_N > 0. : topPtWeight_N_norm[0] = topPtWeight_N[0] * (Nev_topPtWeight_U / Nev_topPtWeight_N)
+        else : topPtWeight_N_norm[0] = 1.
+        topPtWeight_U_norm[0] = topPtWeight_U[0]
+        if Nev_topPtWeight_W > 0. : topPtWeight_W_norm[0] = topPtWeight_W[0] * (Nev_topPtWeight_U / Nev_topPtWeight_W)
+        else : topPtWeight_W_norm[0] = 1.
+
+
         if foundTop0 and foundAntitop0:
             #ttbarMass = sqrt( (top_E+antitop_E)**2 - (top_x+antitop_x)**2 - (top_y+antitop_y)**2 - (top_z+antitop_z)**2 )
             #ttbarMass = 10 #sqrt( (top_E+antitop_E)**2 - (top_x+antitop_x)**2 - (top_y+antitop_y)**2 - (top_z+antitop_z)**2 )
@@ -1008,27 +1034,6 @@ for i_event in range(start_index, end_index):
                 hist_ttbar_mass_topPt_W_norm.Fill(ttbarMass, topPtWeight_W_norm[0])
 
 
-
-        # Normalize the weights
-        pdf_N_norm[0] = pdf_N[0] 
-        if  Nev_pdf_U > 0.  : pdf_U_norm[0] = pdf_U[0] * ( Nev_pdf_N / Nev_pdf_U)
-        else : pdf_U_norm[0] = 1.
-        if Nev_pdf_D > 0. : pdf_D_norm[0] = pdf_D[0] * ( Nev_pdf_N / Nev_pdf_D)
-        else : pdf_D_norm[0] = 1.
-
-
-        q2_N_norm[0] = q2_N[0] 
-        if Nev_q2_U > 0. : q2_U_norm[0] = q2_U[0] * ( Nev_q2_N / Nev_q2_U)
-        else : q2_U_norm[0] = 1.
-        if Nev_q2_D > 0. : q2_D_norm[0] = q2_D[0] * ( Nev_q2_N / Nev_q2_D)
-        else : q2_D_norm[0] = 1
-
-
-        if Nev_topPtWeight_N > 0. : topPtWeight_N_norm[0] = topPtWeight_N[0] * (Nev_topPtWeight_U / Nev_topPtWeight_N)
-        else : topPtWeight_N_norm[0] = 1.
-        topPtWeight_U_norm[0] = topPtWeight_U[0]
-        if Nev_topPtWeight_W > 0. : topPtWeight_W_norm[0] = topPtWeight_W[0] * (Nev_topPtWeight_U / Nev_topPtWeight_W)
-        else : topPtWeight_W_norm[0] = 1.
 
 
 
