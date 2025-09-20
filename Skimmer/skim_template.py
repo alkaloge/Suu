@@ -468,6 +468,7 @@ Nev_q2_D = 0.0
 Nev_topPtWeight_N = 0.0
 Nev_topPtWeight_U = 0.0
 Nev_topPtWeight_W = 0.0
+
 Nev_topPtWeight_N_norm = 0.0
 Nev_topPtWeight_U_norm = 0.0
 Nev_topPtWeight_W_norm = 0.0
@@ -1016,9 +1017,9 @@ for i_event in range(start_index, end_index):
                 hist_ttbar_mass_q2_N.Fill(ttbarMass, q2_N[0])
                 hist_ttbar_mass_q2_U.Fill(ttbarMass, q2_U[0])
                 hist_ttbar_mass_q2_D.Fill(ttbarMass, q2_D[0])
-                hist_ttbar_mass_pdf_N.Fill(ttbarMass, q2_N[0])
-                hist_ttbar_mass_pdf_U.Fill(ttbarMass, q2_U[0])
-                hist_ttbar_mass_pdf_D.Fill(ttbarMass, q2_D[0])
+                hist_ttbar_mass_pdf_N.Fill(ttbarMass, pdf_N[0])
+                hist_ttbar_mass_pdf_U.Fill(ttbarMass, pdf_U[0])
+                hist_ttbar_mass_pdf_D.Fill(ttbarMass, pdf_D[0])
                 hist_ttbar_mass_topPt_N.Fill(ttbarMass, topPtWeight_N[0])
                 hist_ttbar_mass_topPt_U.Fill(ttbarMass, topPtWeight_U[0])
                 hist_ttbar_mass_topPt_W.Fill(ttbarMass, topPtWeight_W[0])
@@ -1026,9 +1027,9 @@ for i_event in range(start_index, end_index):
                 hist_ttbar_mass_q2_N_norm.Fill(ttbarMass, q2_N_norm[0])
                 hist_ttbar_mass_q2_U_norm.Fill(ttbarMass, q2_U_norm[0])
                 hist_ttbar_mass_q2_D_norm.Fill(ttbarMass, q2_D_norm[0])
-                hist_ttbar_mass_pdf_N_norm.Fill(ttbarMass, q2_N_norm[0])
-                hist_ttbar_mass_pdf_U_norm.Fill(ttbarMass, q2_U_norm[0])
-                hist_ttbar_mass_pdf_D_norm.Fill(ttbarMass, q2_D_norm[0])
+                hist_ttbar_mass_pdf_N_norm.Fill(ttbarMass, pdf_N_norm[0])
+                hist_ttbar_mass_pdf_U_norm.Fill(ttbarMass, pdf_U_norm[0])
+                hist_ttbar_mass_pdf_D_norm.Fill(ttbarMass, pdf_D_norm[0])
                 hist_ttbar_mass_topPt_N_norm.Fill(ttbarMass, topPtWeight_N_norm[0])
                 hist_ttbar_mass_topPt_U_norm.Fill(ttbarMass, topPtWeight_U_norm[0])
                 hist_ttbar_mass_topPt_W_norm.Fill(ttbarMass, topPtWeight_W_norm[0])
